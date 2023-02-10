@@ -1,0 +1,14 @@
+content:
+- Scopes
+- Declaring classes
+- Map
+- Hierarchy of exceptions
+- Multi-dimensional list
+- Processing strings
+- Regexps
+- Member functions
+- Nullable and non-nullable types
+- Default arguments
+- Named arguments
+- Null safety
+- toString()
