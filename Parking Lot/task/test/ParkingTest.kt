@@ -21,30 +21,31 @@ open class InputClue(
     fun toFailure(message: String): CheckResult {
         if (isPrivate) {
             // Ciphered
-            return CheckResult.wrong("Incorrect output. This is a private test. " + (hint ?: ""))
+            return CheckResult.wrong("Incorrect output." + (hint ?: ""))
         } else {
             return CheckResult.wrong("$message ${hint ?: ""}")
         }
     }
 }
 
+
 class OutputClue(input: String, val output: String, isPrivate: Boolean, hint: String?)
     : InputClue(input, isPrivate, hint) {
 
-    fun compareLines(reply: String) : CheckResult {
+    fun compareLines(reply: String): CheckResult {
         val hisLines = reply.trim().lines()
         val myLines = output.trim().lines()
 
         myLines.zip(hisLines).withIndex().forEach { (i, pair) ->
             val (my, his) = pair
-            if (my != his) {
+            if (my.toLowerCase() != his.toLowerCase()) {
                 return toFailure("Error in line ${i + 1}: \"$his\" instead of \"$my\".")
             }
         }
         // if all common lines are correct, but sizes are different.
         if (hisLines.size != myLines.size) {
-            return toFailure("Your output contains ${hisLines.size}" +
-                    " lines instead of ${myLines.size}.")
+            return toFailure("Your output contains ${hisLines.size} " +
+                    "lines instead of ${myLines.size}.")
         }
         return CheckResult.correct();
     }
@@ -65,75 +66,103 @@ fun String.trimAllIndents() = this.lines()
         .joinToString("\n")
 
 
-class Task3Test : StageTest<OutputClue>() {
+class Task5Test : StageTest<OutputClue>() {
 
-    override fun generate(): List<TestCase<OutputClue>> {
-        // 20 cars
-        val stripedCars = List(10) { i ->
-            listOf("park KA-$i-HH-9999 White",
-                    "park KA-$i-HH-3672 Green")
-        }
-                .flatten()
-                .joinToString("\n")
+    override fun generate() = listOf(
+            outputCase(
+                    """
+                        spot_by_color yellow
+                        create 4
+                        park KA-01-HH-9999 White
+                        park KA-01-HH-3672 White
+                        park Rs-P-N-21 Red
+                        park Rs-P-N-22 Red
+                        reg_by_color GREEN
+                        reg_by_color WHITE
+                        spot_by_color GREEN
+                        spot_by_color red
+                        spot_by_reg ABC
+                        spot_by_reg KA-01-HH-3672
+                        spot_by_reg Rs-P-N-21
+                        exit
+                    """.trimAllIndents(),
+                    """
+                        Sorry, a parking lot has not been created.
+                        Created a parking lot with 4 spots.
+                        White car parked in spot 1.
+                        White car parked in spot 2.
+                        Red car parked in spot 3.
+                        Red car parked in spot 4.
+                        No cars with color GREEN were found.
+                        KA-01-HH-9999, KA-01-HH-3672
+                        No cars with color GREEN were found.
+                        3, 4
+                        No cars with registration number ABC were found.
+                        2
+                        3
+            """.trimAllIndents(),
+                    hint = "See example 1."
+            ),
+            outputCase(
+                    """
+                        spot_by_color yellow
+                        reg_by_color yellow
+                        spot_by_reg yellow
+                        exit
+                    """.trimAllIndents(),
+                    """
+                        Sorry, a parking lot has not been created.
+                        Sorry, a parking lot has not been created.
+                        Sorry, a parking lot has not been created.
+            """.trimAllIndents(),
+                    isPrivate = true,
+                    hint = "Check commands until the parking is created."
+            ),
+            outputCase(
+                    """
+                        create 5
+                        park A AA
+                        park B BB
+                        park C BB
+                        park D AA
+                        park E AA
+                        leave 4
+                        reg_by_color aa
+                        reg_by_color bb
+                        reg_by_color zz
+                        spot_by_color aa
+                        spot_by_color bb
+                        spot_by_color zz
+                        spot_by_reg A
+                        spot_by_reg B
+                        spot_by_reg Z
+                        exit
+                    """.trimAllIndents(),
+                    """
+                        Created a parking lot with 5 spots.
+                        AA car parked in spot 1.
+                        BB car parked in spot 2.
+                        BB car parked in spot 3.
+                        AA car parked in spot 4.
+                        AA car parked in spot 5.
+                        Spot 4 is free.
+                        A, E
+                        B, C
+                        No cars with color zz were found.
+                        1, 5
+                        2, 3
+                        No cars with color zz were found.
+                        1
+                        2
+                        No cars with registration number Z were found.
+            """.trimAllIndents(),
+                    isPrivate = true,
+                    hint = "Check the case, when the parking is not full."
+            )
 
-        val stripedAns = List(10) { i ->
-            listOf("White car parked in spot ${2 * i + 1}.",
-                    "Green car parked in spot ${2 * i + 2}.")
-        }
-                .flatten()
-                .joinToString("\n")
-
-
-        return listOf(
-                outputCase(
-                        """$stripedCars
-                            park Rs-P-N-21 Red
-                            leave 1
-                            park Rs-P-N-21 Red
-                            exit
-                        """.trimAllIndents(),
-                        """
-                            $stripedAns
-                            Sorry, the parking lot is full.
-                            Spot 1 is free.
-                            Red car parked in spot 1.
-                        """.trimAllIndents(),
-                        hint = "See example 1."),
-                outputCase(
-                        """
-                            $stripedCars
-                            park Rs-P-N-21 Red
-                            park ABC Green
-                            leave 5
-                            leave 1
-                            leave 20
-                            park Rs-P-N-21 White
-                            park Rs-P-N-22 Blue
-                            park Rs-P-N-23 Red
-                            park A B
-                            exit
-                        """.trimAllIndents(),
-                        """
-                            $stripedAns
-                            Sorry, the parking lot is full.
-                            Sorry, the parking lot is full.
-                            Spot 5 is free.
-                            Spot 1 is free.
-                            Spot 20 is free.
-                            White car parked in spot 1.
-                            Blue car parked in spot 5.
-                            Red car parked in spot 20.
-                            Sorry, the parking lot is full.
-                        """.trimAllIndents(),
-                        isPrivate = true,
-                        hint = "Spots should be assigned in ascending order.")
-        )
-    }
-
+    )
 
     override fun check(reply: String, clue: OutputClue): CheckResult {
-
         return clue.compareLines(reply)
     }
 }
-
